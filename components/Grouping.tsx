@@ -17,7 +17,7 @@ export const Grouping: React.FC<GroupingProps> = ({ names }) => {
     setIsProcessing(true);
     const shuffled = [...names].sort(() => Math.random() - 0.5);
     const result: Group[] = [];
-    
+
     for (let i = 0; i < shuffled.length; i += groupSize) {
       result.push({
         id: Math.floor(i / groupSize) + 1,
@@ -40,28 +40,20 @@ export const Grouping: React.FC<GroupingProps> = ({ names }) => {
     if (groups.length === 0) return;
 
     const headers = ["組別ID", "創意隊名", "成員名單"];
-    const rows = groups.flatMap(group => 
-      group.members.map(member => [
-        group.id,
-        group.theme || group.name,
-        member
-      ])
+    const rows = groups.flatMap(group =>
+      group.members.map(member => ({
+        "組別ID": group.id,
+        "創意隊名": group.theme || group.name,
+        "成員名單": member
+      }))
     );
 
-    const csvContent = [
-      "\ufeff" + headers.join(","), // 加入 BOM 以支援 Excel 中文
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(","))
-    ].join("\n");
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `分組結果_${new Date().toISOString().slice(0, 10)}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    import('xlsx').then(XLSX => {
+      const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "分組結果");
+      XLSX.writeFile(workbook, `分組結果_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    });
   };
 
   return (
@@ -79,8 +71,8 @@ export const Grouping: React.FC<GroupingProps> = ({ names }) => {
 
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="flex-1 md:w-32">
-             <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">每組人數</label>
-             <input
+            <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">每組人數</label>
+            <input
               type="number"
               min="2"
               max={names.length}
@@ -104,15 +96,15 @@ export const Grouping: React.FC<GroupingProps> = ({ names }) => {
                 </>
               )}
             </button>
-            
+
             {groups.length > 0 && (
               <button
                 onClick={downloadCSV}
                 className="py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-2xl shadow-sm flex items-center justify-center gap-2 transition-all"
-                title="下載分組結果 CSV"
+                title="下載分組結果 Excel"
               >
                 <Download className="w-5 h-5 text-indigo-500" />
-                <span className="hidden sm:inline">匯出 CSV</span>
+                <span className="hidden sm:inline">匯出 Excel</span>
               </button>
             )}
           </div>
@@ -145,12 +137,12 @@ export const Grouping: React.FC<GroupingProps> = ({ names }) => {
           </div>
         ))}
         {groups.length === 0 && (
-           <div className="col-span-full py-20 text-center space-y-4">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full text-gray-300">
-                <Users2 className="w-10 h-10" />
-              </div>
-              <p className="text-gray-400 font-medium italic">尚未進行分組。請設定每組人數並點擊「開始分組」。</p>
-           </div>
+          <div className="col-span-full py-20 text-center space-y-4">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full text-gray-300">
+              <Users2 className="w-10 h-10" />
+            </div>
+            <p className="text-gray-400 font-medium italic">尚未進行分組。請設定每組人數並點擊「開始分組」。</p>
+          </div>
         )}
       </div>
     </div>
