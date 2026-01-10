@@ -2,6 +2,7 @@
   "name": "抽籤小幫手",
   "private": true,
   "version": "0.0.0",
+  "homepage": ".",
   "type": "module",
   "scripts": {
     "dev": "vite",
